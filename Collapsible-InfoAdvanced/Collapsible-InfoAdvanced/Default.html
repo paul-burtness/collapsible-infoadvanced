@@ -1,0 +1,208 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Collapsible from InfoAdvanced</title>
+    <script src="Scripts/jquery-1.10.2.min.js"></script>
+</head>
+<body>
+    <div id="ANOKCO_app"></div>
+    <script type="text/javascript">
+        //function: converts CivicPlus InfoAdvanced items in a widget to a series of collapsible content elements
+        //assumptions:
+        // All InfoAdvanced widgets are contained within <section class="widgetInfoAdvanced"> elements
+        // InfoAdvanced widgets to be made collapsible have:
+        //  <header class="widgetHeader"><div class=""><h3>SECTION NAME{collapse}</h3></div></header>
+        var ANOKCO = ANOKCO || {};
+        //some constants for customizing
+        ANOKCO.classHead = ".subhead1"; //the selector string that selects the subhead1 string, typically in <font class="subhead1">Board of Adjustment</font>
+        ANOKCO.classPageStyles = "pageStyles"; //the CSS class for key content styles in a block of widget content
+        ANOKCO.toggleSpeed = "300"; //speed in ms of collapsing a block
+        ANOKCO.headerTxColorHover = "#FFFFFF";
+        ANOKCO.headerTxColorNormal = "#000000";
+        ANOKCO.headerBgColorHover = "#BC593A";
+        ANOKCO.headerBgColorNormal = "#B2A69A";
+        ANOKCO.expcolAllTxColor = "#000000";
+
+        ANOKCO.MAKE = {
+            findInfoAdvancedWidgets: function () {
+                "use strict";
+                //find all InfoAdvanced widgets and transform the ones with a header that includes {collapse}
+                $("section.widgetInfoAdvanced").each(function (index) {
+                    //search for this.h3
+                    var myHeader = $(this).find("h3");
+                    var myHeaderText = $(myHeader).text();
+                    if (myHeaderText.indexOf("{collapse}") > 0) {
+                        createCollapsible(this);
+                    }
+                });
+            },
+            createCollapsible: function (myTabbedWidget) {
+                "use strict";
+                var myTabPanels, myTabLabels, myTabContents;
+                //put a new div for the collapsible content before the first tabbed widget, give it the class that applies important CivicPlus page styles
+                $("<div id='collapse0' class='collapse " + ANOKCO.classPageStyles + "'></div>").insertBefore($(myTabbedWidget));
+                //get the div that contains all the tab panels
+                myTabPanels = $(myTabbedWidget).find(".cpTabPanels");
+                //get the label in each tab
+                myTabLabels = $(myTabPanels).find("ol > li > a");
+                //get the entire content widget in each tab
+                myTabContents = $(myTabPanels).find("div > div");
+                //loop through the labels and contents to build the collapsible content items
+                $(myTabLabels).each(function (index) {
+                    //add structure for collapsible item to the new div
+                    $("#collapse0").append("<div id='collapseItem" + index + "' class='collapseItem'></div>");
+                    $("#collapseItem" + index).append("<div id='collapseHead" + index + "' class='collapseHead'><a href='#'></a></div>");
+                    $("#collapseHead" + index + " a").append("<span class='collapseIcon'>&nbsp;+&nbsp;</span>");
+                    $("#collapseItem" + index).append("<div id='collapseBody" + index + "' class='collapseBody'></div>");
+                    //put the text of the myTabLabel into the head
+                    $("#collapseHead" + index + " a").append($(this).text());
+                    //put the contents of the content widget into the body
+                    $("#collapseBody" + index).append($(myTabContents).get(index));
+                });
+                //add links for show all and hide all at top and bottom of content
+                $("#collapse0").prepend("<div id='expandAll0' class='expandAll'><a href='#'>Expand all information</a></div>");
+                $("#collapse0").append("<div id='collapseAll0' class='collapseAll'><a href='#'>Collapse all information</a></div>");
+                //remove the tabbed widget from the DOM
+                $(myTabbedWidget).remove();
+                //add events to the structure
+                ANOKCO.MAKE.eventsCollapsible();
+            },
+            //attach the events to control elements
+            eventsCollapsible: function () {
+                //attach event handlers to all head elements of the content
+                "use strict";
+                $("div.collapseHead a").click(function () {
+                    var selection = $(this).parent().next();
+                    ANOKCO.VIEW.slideToggleHandle(selection, "single_expandcollapse");
+                    return false;
+                });
+                //attach event handler to expand all link
+                $("div#expandAll0 a").click(function () {
+                    var selection = $(".collapseBody");
+                    ANOKCO.VIEW.slideToggleHandle(selection, "all_expand");
+                    return false;
+                });
+                //attach event handler to collapse all link
+                $("div#collapseAll0 a").click(function () {
+                    var selection = $(".collapseBody");
+                    ANOKCO.VIEW.slideToggleHandle(selection, "all_collapse");
+                    return false;
+                });
+                //after attaching event handlers, format the display
+                ANOKCO.MAKE.formatCollapsible();
+            },
+            formatCollapsible: function () {
+                //customize colors by setting the variables at the top of the code, other settings change in this function
+                "use strict";
+                $(".collapseHead").css({ "padding": "0px 0px 5px 0px" });
+                $(".collapseHead a").css({ "display": "block", "text-decoration": "none", "font-size": "larger", "font-weight": "bold", "padding": "5px 0px 5px 10px", "color": ANOKCO.headerTxColorNormal, "background-color": ANOKCO.headerBgColorNormal });
+                $(".collapseHead a").hover(function () {
+                    $(this).css({ "color": ANOKCO.headerTxColorHover, "background-color": ANOKCO.headerBgColorHover });
+                }, function () {
+                    $(this).css({ "color": ANOKCO.headerTxColorNormal, "background-color": ANOKCO.headerBgColorNormal });
+                });
+                $(".collapseBody").css({ "display": "none", "padding": "0px 0px 20px 0px" });
+                $("#expandAll0 a").css({ "text-decoration": "none", "font-size": "smaller", "color": ANOKCO.expcolAllTxColor });
+                $("#collapseAll0 a").css({ "text-decoration": "none", "font-size": "smaller", "color": ANOKCO.expcolAllTxColor });
+            }
+        };
+
+        ANOKCO.VIEW = {
+            //define function for processing selection of one or multiple collapseBody divs
+            //selectionType = single_expandcollapse | all_expand | all_collapse
+            slideToggleHandle: function (selection, selectionType) {
+                //loop through the collection of one or more collapseBody divs
+                "use strict";
+                $(selection).each(function () {
+                    switch (selectionType) {
+                        case "single_expandcollapse":
+                            $(this).slideToggle(ANOKCO.toggleSpeed, function () {
+                                ANOKCO.VIEW.slideToggleFormat(this);
+                            });
+                            break;
+                        case "all_expand":
+                            if ($(this).css("display") === "none") {
+                                //if collapsed, expand the div
+                                $(this).slideToggle(ANOKCO.toggleSpeed, function () {
+                                    ANOKCO.VIEW.slideToggleFormat(this);
+                                });
+                            } // if div is already expanded, leave the div expanded
+                            break;
+                        case "all_collapse":
+                            if (!($(this).css("display") === "none")) {
+                                //if div was collapsed, leave it collapsed
+                                //otherwise collapse the div
+                                $(this).slideToggle(ANOKCO.toggleSpeed, function () {
+                                    ANOKCO.VIEW.slideToggleFormat(this);
+                                });
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                });
+                //handle the promise for each div, when all done
+                $(selection).promise().done(function () {
+                    //adust the height of the parent div to match the new height of #collapse0
+                    $("#collapse0").parents(".inner").height($("#collapse0").height() + 26); //padding for div that holds the InfoAdvanced widget
+                    //trigger the CivicPlus function that stretches the outer containers 1 & 12 to match content height
+                    //this function is defined in code embedded on the page after the end of container10
+                    dynamicStretchContainers();
+                    //if selectionType is all_collapse then make sure the top of collapse0 is within the viewport
+                    if (selectionType === "all_collapse") {
+                        var element, bounds;
+                        element = document.getElementById("expandAll0");
+                        bounds = element.getBoundingClientRect();
+                        if (!(bounds.top < window.innerHeight && bounds.bottom > 0)) { //do nothing if top of app is visible
+                            element.scrollIntoView();
+                            //scroll another 20 pixels so it is not at top edge of screen
+                            window.scrollBy(0, -20);
+                        }
+                    }
+                });
+            },
+            slideToggleFormat: function (selection) {
+                //after the slideToggle animation, use state of the div to set color of head and the shape of the icon
+                "use strict";
+                if ($(selection).css("display") === "none") {
+                    //set the icon to +
+                    $(selection).prev().children("a").find(".collapseIcon").html("&nbsp;+&nbsp;");
+                    //set the color and background color to normal
+                    $(selection).prev().children("a").css({ "color": ANOKCO.headerTxColorNormal, "background-color": ANOKCO.headerBgColorNormal });
+                    //set the hover and after hover colors
+                    $(selection).prev().children("a").hover(function () {
+                        $(this).css({ "color": ANOKCO.headerTxColorHover, "background-color": ANOKCO.headerBgColorHover });
+                    }, function () {
+                        $(this).css({ "color": ANOKCO.headerTxColorNormal, "background-color": ANOKCO.headerBgColorNormal });
+                    });
+                } else {
+                    //set the icon to -
+                    $(selection).prev().children("a").find(".collapseIcon").html("&nbsp;&ndash;&nbsp;"); // note use of en dash, not -
+                    //set the color and background color to hover
+                    $(selection).prev().children("a").css({ "color": ANOKCO.headerTxColorHover, "background-color": ANOKCO.headerBgColorHover });
+                    //set the hover and after hover colors
+                    $(selection).prev().children("a").hover(function () {
+                        $(this).css({ "color": ANOKCO.headerTxColorHover, "background-color": ANOKCO.headerBgColorHover });
+                    }, function () {
+                        $(this).css({ "color": ANOKCO.headerTxColorHover, "background-color": ANOKCO.headerBgColorHover });
+                    });
+                }
+            }
+        };
+
+        $(document).ready(function () {
+            "use strict";
+            if ($("#liveEditTabs").length) {
+                //if page is in Live Edit On mode, do not run app, just display message
+                $("#ANOKCO_app").text("This is a JavaScript app. DO NOT DELETE");
+            }
+            else {
+                //if page is in view mode, run the app
+                //then run the app
+                ANOKCO.MAKE.findInfoAdvancedWidgets();
+            }
+        });
+    </script>
+</body>
+</html>
