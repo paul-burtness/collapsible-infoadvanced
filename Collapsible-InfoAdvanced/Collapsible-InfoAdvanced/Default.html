@@ -13,9 +13,10 @@
         // All InfoAdvanced widgets are contained within <section class="widgetInfoAdvanced"> elements
         // InfoAdvanced widgets to be made collapsible have:
         //  <header class="widgetHeader"><div class=""><h3>SECTION NAME{collapse}</h3></div></header>
+        // The InfoAdvanced items are contained within an ol element like <ol class="pageStyles semanticList" style="">
         var ANOKCO = ANOKCO || {};
         //some constants for customizing
-        ANOKCO.classHead = ".subhead1"; //the selector string that selects the subhead1 string, typically in <font class="subhead1">Board of Adjustment</font>
+        ANOKCO.classHead = ".subhead1"; //the selector string that selects the subhead1 string, typically in <font class="subhead1">name goes here</font>
         ANOKCO.classPageStyles = "pageStyles"; //the CSS class for key content styles in a block of widget content
         ANOKCO.toggleSpeed = "300"; //speed in ms of collapsing a block
         ANOKCO.headerTxColorHover = "#FFFFFF";
@@ -29,44 +30,74 @@
                 "use strict";
                 //find all InfoAdvanced widgets and transform the ones with a header that includes {collapse}
                 $("section.widgetInfoAdvanced").each(function (index) {
-                    //search for this.h3
+                    //search for this.h3 and check to see if the header includes "{collapse}"
                     var myHeader = $(this).find("h3");
                     var myHeaderText = $(myHeader).text();
                     if (myHeaderText.indexOf("{collapse}") > 0) {
-                        createCollapsible(this);
+                        //if the widget header includes {collapse} then transform it
+                        ANOKCO.MAKE.createCollapsible(this);
                     }
                 });
             },
-            createCollapsible: function (myTabbedWidget) {
+            createCollapsible: function (myInfoAdvancedWidget) {
                 "use strict";
-                var myTabPanels, myTabLabels, myTabContents;
-                //put a new div for the collapsible content before the first tabbed widget, give it the class that applies important CivicPlus page styles
-                $("<div id='collapse0' class='collapse " + ANOKCO.classPageStyles + "'></div>").insertBefore($(myTabbedWidget));
-                //get the div that contains all the tab panels
-                myTabPanels = $(myTabbedWidget).find(".cpTabPanels");
-                //get the label in each tab
-                myTabLabels = $(myTabPanels).find("ol > li > a");
-                //get the entire content widget in each tab
-                myTabContents = $(myTabPanels).find("div > div");
-                //loop through the labels and contents to build the collapsible content items
-                $(myTabLabels).each(function (index) {
+                //remove "{collapse}" from header
+                var myHeaderText = $(myInfoAdvancedWidget).find("header").find("h3").text();
+                myHeaderText = myHeaderText.replace("{collapse}", "");
+                $(myInfoAdvancedWidget).find("header").find("h3").text(myHeaderText);
+                //find the ol that holds all items and start building the transformed content in a div just before it
+                //use first in case the item has more than one ol.semanticList
+                var myListOfItems = $(myInfoAdvancedWidget).find("ol.semanticList");
+                $(myListOfItems).before("<div id='collapse0' class='collapse " + ANOKCO.classPageStyles + "'></div>");
+                //loop through the collection of li to build the collapsible contents
+                $(myListOfItems).find("li.widgetItem").each(function (index) {
                     //add structure for collapsible item to the new div
                     $("#collapse0").append("<div id='collapseItem" + index + "' class='collapseItem'></div>");
                     $("#collapseItem" + index).append("<div id='collapseHead" + index + "' class='collapseHead'><a href='#'></a></div>");
                     $("#collapseHead" + index + " a").append("<span class='collapseIcon'>&nbsp;+&nbsp;</span>");
                     $("#collapseItem" + index).append("<div id='collapseBody" + index + "' class='collapseBody'></div>");
-                    //put the text of the myTabLabel into the head
-                    $("#collapseHead" + index + " a").append($(this).text());
+                    //find the element with class in ANOKCO.classHead
+                    $("#collapseHead" + index + " a").append($(this).find(ANOKCO.classHead).text());
                     //put the contents of the content widget into the body
-                    $("#collapseBody" + index).append($(myTabContents).get(index));
+                    $("#collapseBody" + index).append($(this).html());
                 });
                 //add links for show all and hide all at top and bottom of content
                 $("#collapse0").prepend("<div id='expandAll0' class='expandAll'><a href='#'>Expand all information</a></div>");
                 $("#collapse0").append("<div id='collapseAll0' class='collapseAll'><a href='#'>Collapse all information</a></div>");
-                //remove the tabbed widget from the DOM
-                $(myTabbedWidget).remove();
+                //remove the ol element from the DOM
+                $(myListOfItems).remove();
                 //add events to the structure
                 ANOKCO.MAKE.eventsCollapsible();
+
+                
+                //var myTabPanels, myTabLabels, myTabContents;
+                ////put a new div for the collapsible content before the first tabbed widget, give it the class that applies important CivicPlus page styles
+                //$("<div id='collapse0' class='collapse " + ANOKCO.classPageStyles + "'></div>").insertBefore($(myTabbedWidget));
+                ////get the div that contains all the tab panels
+                //myTabPanels = $(myTabbedWidget).find(".cpTabPanels");
+                ////get the label in each tab
+                //myTabLabels = $(myTabPanels).find("ol > li > a");
+                ////get the entire content widget in each tab
+                //myTabContents = $(myTabPanels).find("div > div");
+                ////loop through the labels and contents to build the collapsible content items
+                //$(myTabLabels).each(function (index) {
+                //    //add structure for collapsible item to the new div
+                //    $("#collapse0").append("<div id='collapseItem" + index + "' class='collapseItem'></div>");
+                //    $("#collapseItem" + index).append("<div id='collapseHead" + index + "' class='collapseHead'><a href='#'></a></div>");
+                //    $("#collapseHead" + index + " a").append("<span class='collapseIcon'>&nbsp;+&nbsp;</span>");
+                //    $("#collapseItem" + index).append("<div id='collapseBody" + index + "' class='collapseBody'></div>");
+                //    //put the text of the myTabLabel into the head
+                //    $("#collapseHead" + index + " a").append($(this).text());
+                //    //put the contents of the content widget into the body
+                //    $("#collapseBody" + index).append($(myTabContents).get(index));
+                //});
+                ////add links for show all and hide all at top and bottom of content
+                //$("#collapse0").prepend("<div id='expandAll0' class='expandAll'><a href='#'>Expand all information</a></div>");
+                //$("#collapse0").append("<div id='collapseAll0' class='collapseAll'><a href='#'>Collapse all information</a></div>");
+                ////remove the tabbed widget from the DOM
+                //$(myTabbedWidget).remove();
+                ////add events to the structure
+                //ANOKCO.MAKE.eventsCollapsible();
             },
             //attach the events to control elements
             eventsCollapsible: function () {
