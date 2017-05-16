@@ -7,6 +7,7 @@
 </head>
 <body>
     <div id="ANOKCO_app"></div>
+    <div id="ANOKCO_test">Toggle item <a href="#" onclick="ANOKCO.VIEW.anchorToggle('collapseItem4'); return false;">collapseItem4</a></div>
     <script type="text/javascript">
         //function: converts CivicPlus InfoAdvanced items in a widget to a series of collapsible content elements
         //assumptions:
@@ -68,36 +69,6 @@
                 $(myListOfItems).remove();
                 //add events to the structure
                 ANOKCO.MAKE.eventsCollapsible();
-
-                
-                //var myTabPanels, myTabLabels, myTabContents;
-                ////put a new div for the collapsible content before the first tabbed widget, give it the class that applies important CivicPlus page styles
-                //$("<div id='collapse0' class='collapse " + ANOKCO.classPageStyles + "'></div>").insertBefore($(myTabbedWidget));
-                ////get the div that contains all the tab panels
-                //myTabPanels = $(myTabbedWidget).find(".cpTabPanels");
-                ////get the label in each tab
-                //myTabLabels = $(myTabPanels).find("ol > li > a");
-                ////get the entire content widget in each tab
-                //myTabContents = $(myTabPanels).find("div > div");
-                ////loop through the labels and contents to build the collapsible content items
-                //$(myTabLabels).each(function (index) {
-                //    //add structure for collapsible item to the new div
-                //    $("#collapse0").append("<div id='collapseItem" + index + "' class='collapseItem'></div>");
-                //    $("#collapseItem" + index).append("<div id='collapseHead" + index + "' class='collapseHead'><a href='#'></a></div>");
-                //    $("#collapseHead" + index + " a").append("<span class='collapseIcon'>&nbsp;+&nbsp;</span>");
-                //    $("#collapseItem" + index).append("<div id='collapseBody" + index + "' class='collapseBody'></div>");
-                //    //put the text of the myTabLabel into the head
-                //    $("#collapseHead" + index + " a").append($(this).text());
-                //    //put the contents of the content widget into the body
-                //    $("#collapseBody" + index).append($(myTabContents).get(index));
-                //});
-                ////add links for show all and hide all at top and bottom of content
-                //$("#collapse0").prepend("<div id='expandAll0' class='expandAll'><a href='#'>Expand all information</a></div>");
-                //$("#collapse0").append("<div id='collapseAll0' class='collapseAll'><a href='#'>Collapse all information</a></div>");
-                ////remove the tabbed widget from the DOM
-                //$(myTabbedWidget).remove();
-                ////add events to the structure
-                //ANOKCO.MAKE.eventsCollapsible();
             },
             //attach the events to control elements
             eventsCollapsible: function () {
@@ -136,6 +107,17 @@
                 $(".collapseBody").css({ "display": "none", "padding": "0px 0px 20px 0px" });
                 $("#expandAll0 a").css({ "text-decoration": "none", "font-size": "smaller", "color": ANOKCO.expcolAllTxColor });
                 $("#collapseAll0 a").css({ "text-decoration": "none", "font-size": "smaller", "color": ANOKCO.expcolAllTxColor });
+                ANOKCO.MAKE.checkAnchor();
+            },
+            checkAnchor: function () {
+                //after the set of collapsible items has been created and formatted, check the page url to see if it has an anchor link
+                var myURL = window.location.href;
+                var myAnchor = "";
+                if (myURL.indexOf("#") > 0) {
+                    myAnchor = myURL.substring(myURL.indexOf("#") + 1);
+                }
+                console.log(myAnchor);
+                ANOKCO.VIEW.anchorToggle(myAnchor);
             }
         };
 
@@ -219,6 +201,11 @@
                         $(this).css({ "color": ANOKCO.headerTxColorHover, "background-color": ANOKCO.headerBgColorHover });
                     });
                 }
+            },
+            anchorToggle: function (collapseItem) {
+                var selection = $("#" + collapseItem).find(".collapseBody");
+                ANOKCO.VIEW.slideToggleHandle(selection, "single_expandcollapse");
+                return false;
             }
         };
 
