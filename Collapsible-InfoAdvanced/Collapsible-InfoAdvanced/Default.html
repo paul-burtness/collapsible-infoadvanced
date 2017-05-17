@@ -25,6 +25,8 @@
         ANOKCO.headerBgColorHover = "#BC593A";
         ANOKCO.headerBgColorNormal = "#B2A69A";
         ANOKCO.expcolAllTxColor = "#000000";
+        //this array holds anchor link pairs, where the link string (eg. #thissection) is matched to the element id of the collapsible item
+        ANOKCO.anchorLinks = {};
 
         ANOKCO.MAKE = {
             findInfoAdvancedWidgets: function () {
@@ -57,8 +59,8 @@
                     $("#collapseItem" + index).append("<div id='collapseHead" + index + "' class='collapseHead'><a href='#'></a></div>");
                     $("#collapseHead" + index + " a").append("<span class='collapseIcon'>&nbsp;+&nbsp;</span>");
                     $("#collapseItem" + index).append("<div id='collapseBody" + index + "' class='collapseBody'></div>");
-                    //find the element with class in ANOKCO.classHead
-                    $("#collapseHead" + index + " a").append($(this).find(ANOKCO.classHead).text());
+                    //get the heading for the item
+                    $("#collapseHead" + index + " a").append(ANOKCO.MAKE.getHeadingText(this, ANOKCO.classHead, "#collapseItem" + index));
                     //put the contents of the content widget into the body
                     $("#collapseBody" + index).append($(this).html());
                 });
@@ -69,6 +71,27 @@
                 $(myListOfItems).remove();
                 //add events to the structure
                 ANOKCO.MAKE.eventsCollapsible();
+            },
+            getHeadingText: function (myHeadingElement, myClassHead, myItemId) {
+                //returns the text that will become the heading for the collapsible item, found in the element with classHeadingText
+                //also, if it finds anchor link text in the heading, stores the text and myItemId in ANOKCO.anchorlinks
+                var myHeadingText = "";
+                var myAnchorLinkText = "";
+                myHeadingText = $(myHeadingElement).find(myClassHead).text();
+                //search for anchor link text in heading text
+                //both { and } must be present and string contained must be length > 0
+                var myStart = myHeadingText.indexOf("{");
+                var myEnd = myHeadingText.indexOf("}");
+                if ((myStart > 0) && (myEnd > 0) && ((myEnd - myStart) > 1)) {
+                    //store the anchor link text: myItemId pair
+                    myAnchorLinkText = encodeURI(myHeadingText.substring(myStart + 1, myEnd));
+                    ANOKCO.anchorLinks[myAnchorLinkText] = myItemId;
+                    //remove the anchor link text from the heading
+                    myHeadingText = myHeadingText.substring(0, myStart);
+                    //put the new headingText into the content
+                    $(myHeadingElement).find(myClassHead).text(myHeadingText);
+                }
+                return myHeadingText
             },
             //attach the events to control elements
             eventsCollapsible: function () {
@@ -113,11 +136,15 @@
                 //after the set of collapsible items has been created and formatted, check the page url to see if it has an anchor link
                 var myURL = window.location.href;
                 var myAnchor = "";
+                var myItemId = "";
                 if (myURL.indexOf("#") > 0) {
                     myAnchor = myURL.substring(myURL.indexOf("#") + 1);
                 }
-                console.log(myAnchor);
-                ANOKCO.VIEW.anchorToggle(myAnchor);
+                myItemId = ANOKCO.anchorLinks[myAnchor];
+                //if myAnchor is not a valid anchor for the collapsible items
+                // then ANOKCO.anchorLinks[myAnchor] is undefined
+                // passing an undefined value to the following functions does not cause an error, it just does not open up a collapsible item
+                ANOKCO.VIEW.anchorToggle(myItemId);
             }
         };
 
@@ -173,6 +200,19 @@
                             window.scrollBy(0, -20);
                         }
                     }
+                    //if selectionType is single_expandcollapse then make sure the top of collapseItem is within the viewport
+                    if (selectionType === "single_expandcollapse") {
+                        var element, bounds, myId;
+                        //get the id of the div that defines selection
+                        myId = $(selection).attr("id");
+                        element = document.getElementById(myId);
+                        bounds = element.getBoundingClientRect();
+                        if (!(bounds.top < window.innerHeight && bounds.bottom > 0)) { //do nothing if top of app is visible
+                            element.scrollIntoView();
+                            //scroll another 20 pixels so it is not at top edge of screen
+                            window.scrollBy(0, -20);
+                        }
+                    }
                 });
             },
             slideToggleFormat: function (selection) {
@@ -203,7 +243,7 @@
                 }
             },
             anchorToggle: function (collapseItem) {
-                var selection = $("#" + collapseItem).find(".collapseBody");
+                var selection = $(collapseItem).find(".collapseBody");
                 ANOKCO.VIEW.slideToggleHandle(selection, "single_expandcollapse");
                 return false;
             }
